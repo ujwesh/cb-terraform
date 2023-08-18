@@ -20,8 +20,8 @@ provider "aws" {
 #   ec2-env    = "dev"
 # }
 
-  # ec2-name = ["instance-1"]
-  # ec2-type = ["t2.micro"]
+# ec2-name = ["instance-1"]
+# ec2-type = ["t2.micro"]
 #   ec2-ami  = "ami-08a52ddb321b32a8c"
 #   ec2-sg   = "sg-0808f0b14acc5f505"
 #   ec2-subnet = module.vpc.public_subnet_ids
@@ -50,6 +50,14 @@ module "vpc" {
   IGW-main           = "vpc-IGW-main"
   NAT-gw             = "vpc-NAT-gw"
   vpc-env            = "dev"
+  availability-zone  = ["us-east-1a", "us-east-1b", "us-east-1c", "us-east-1d", "us-east-1e", "us-east-1f",]
+
+  tags = {
+    data-center = "mumbai"
+    owner     = "bata"
+    cost-center    = "bata-cost-0012"
+    mail-id   = "bata123@gmail.com"
+  }
 
 }
 

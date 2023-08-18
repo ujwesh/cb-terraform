@@ -41,4 +41,12 @@ module "vpc" {
   IGW-main           = "vpc-IGW-main"
   NAT-gw             = "vpc-NAT-gw"
   vpc-env            = "test"
+  availability-zone  = ["us-east-1a", "us-east-1b", "us-east-1c", "us-east-1d", "us-east-1e", "us-east-1f",]
+
+  tags = {
+    data-center = "mumbai"
+    owner     = "bata"
+    cost-center    = "bata-cost-0012"
+    mail-id   = "bata123@gmail.com"
+  }
 }

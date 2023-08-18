@@ -1,43 +1,46 @@
 ## create vpc:-
 
 resource "aws_vpc" "main" {
-  cidr_block       = var.cidr-block
-  instance_tenancy = var.instance_tenancy
+  cidr_block           = var.cidr-block
+  instance_tenancy     = var.instance_tenancy
   enable_dns_hostnames = true
 
-  tags = {
+  tags = merge(var.tags, tomap({
+    Name = format("%s-%s", var.vpc-name, var.vpc-env), "environment" = var.vpc-env
+    
     # Name = "${var.vpc-name}-${var.vpc-env}"
-    Name = format("%s-%s", var.vpc-name, var.vpc-env)
-  }
+  }))
 }
 
 
 ## create 1 public & 2 private subnets:-
 
 resource "aws_subnet" "public" {
-  vpc_id     = aws_vpc.main.id
-  cidr_block = var.public-cidr-block
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = var.public-cidr-block
+  availability_zone = var.availability-zone[5]
+
   # cidr_block = "${var.Private_Subnet_1}"   differnce in line 19 & 20
 
-  # availability_zone        = "us-east-1d"
-
-  tags = {
+  tags = merge(var.tags, tomap({
+    Name = format("%s-%s-%s", var.public-subnet, var.vpc-env, var.availability-zone[5]), "type" = "public"
+    
     # Name = "${var.public-subnet}-${var.vpc-env}"
-    Name = format("%s-%s", var.public-subnet, var.vpc-env)
-  }
+  }))
 }
 
 resource "aws_subnet" "private" {
-  vpc_id     = aws_vpc.main.id
-  count = length(var.private-cidr-block)
-  cidr_block = var.private-cidr-block[count.index]
+  count             = length(var.private-cidr-block)
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = var.private-cidr-block[count.index]
+  availability_zone = element(var.availability-zone, count.index)
 
-  # availability_zone        = "us-east-1b"
 
-  tags = {
+  tags = merge(var.tags, tomap({
+    Name = format("%s-%s-%s", var.private-subnet, var.vpc-env, element(var.availability-zone, count.index)), "type" = "private"
+    
     # Name = "${var.private-subnet}-${var.vpc-env}"
-    Name = format("%s-%s", var.private-subnet, var.vpc-env)
-  }
+  }))
 }
 
 
@@ -46,20 +49,21 @@ resource "aws_subnet" "private" {
 resource "aws_route_table" "public-RT" {
   vpc_id = aws_vpc.main.id
 
-  tags = {
+  tags =  merge(var.tags, {
+    Name = format("%s-%s", var.public-RT, var.vpc-env)
+    
     # Name = "${var.public-RT}-${var.vpc-env}"
-     Name = format("%s-%s", var.public-RT, var.vpc-env)
-  }
+  })
 }
 
 resource "aws_route_table" "private-RT" {
   vpc_id = aws_vpc.main.id
 
-  tags = {
-    # Name = "${var.private-RT}-${var.vpc-env}"
+  tags =  merge(var.tags, {
     Name = format("%s-%s", var.private-RT, var.vpc-env)
-    
-  }
+
+    # Name = "${var.private-RT}-${var.vpc-env}"
+  })
 }
 
 
@@ -71,7 +75,7 @@ resource "aws_route_table_association" "public-RTA" {
 }
 
 resource "aws_route_table_association" "private-RTA" {
-  count = length(var.private-cidr-block)
+  count          = length(var.private-cidr-block)
   subnet_id      = aws_subnet.private[count.index].id #ask why
   route_table_id = aws_route_table.private-RT.id
 }
@@ -82,11 +86,11 @@ resource "aws_route_table_association" "private-RTA" {
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id
 
-  tags = {
-    # Name = "${var.IGW-main}-${var.vpc-env}"
+  tags = merge( var.tags, {
     Name = format("%s-%s", var.IGW-main, var.vpc-env)
-    
-  }
+
+    # Name = "${var.IGW-main}-${var.vpc-env}"
+  })
 }
 
 # elastic ip for NAT-gw:-
@@ -102,10 +106,11 @@ resource "aws_nat_gateway" "NAT-gw" {
   allocation_id = aws_eip.elastic-ip.id
   subnet_id     = aws_subnet.public.id
 
-  tags = {
-    # Name = "${var.NAT-gw}-${var.vpc-env}"
+  tags =  merge(var.tags, {
     Name = format("%s-%s", var.NAT-gw, var.vpc-env)
-  }
+    
+    # Name = "${var.NAT-gw}-${var.vpc-env}"
+  })
 
   depends_on = [aws_internet_gateway.igw]
 }
@@ -114,19 +119,19 @@ resource "aws_nat_gateway" "NAT-gw" {
 ## Routing for public & private RT (from where traffic should flow):-
 
 resource "aws_route" "Public-route" {
-  route_table_id            = aws_route_table.public-RT.id
-  destination_cidr_block    = "0.0.0.0/0"
-  gateway_id                = aws_internet_gateway.igw.id
+  route_table_id         = aws_route_table.public-RT.id
+  destination_cidr_block = "0.0.0.0/0"
+  gateway_id             = aws_internet_gateway.igw.id
 
-  depends_on                = [aws_route_table.public-RT]
+  depends_on = [aws_route_table.public-RT]
 }
 
 resource "aws_route" "Private-route" {
-  route_table_id            = aws_route_table.private-RT.id
-  destination_cidr_block    = "0.0.0.0/0"
-  nat_gateway_id            = aws_nat_gateway.NAT-gw.id
-  
-  depends_on                = [aws_route_table.private-RT]
+  route_table_id         = aws_route_table.private-RT.id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = aws_nat_gateway.NAT-gw.id
+
+  depends_on = [aws_route_table.private-RT]
 }
 
 ###

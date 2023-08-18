@@ -1,52 +1,63 @@
 variable "cidr-block" {
-    type = string
+  type = string
 }
 
 variable "instance_tenancy" {
-    type = string
-    default = "dedicated"
+  type    = string
+  default = "dedicated"
 
 }
 
 variable "vpc-name" {
-    type = string
+  type = string
 }
 
 variable "public-cidr-block" {
-    type = string
+  type = string
 }
 
 
 variable "private-cidr-block" {
-    type = list
+  type = list(any)
 }
 
 ##
 variable "public-subnet" {
-    type = string
+  type = string
 }
 
 variable "private-subnet" {
-    type = string
+  type = string
 }
 
 variable "public-RT" {
-    type = string
+  type = string
 }
 
 variable "private-RT" {
-    type = string
+  type = string
 }
 
 variable "IGW-main" {
-    type = string
+  type = string
 }
 
 variable "NAT-gw" {
-    type = string
+  type = string
 }
 
 ##
 variable "vpc-env" {
-    type = string
+  type = string
+}
+
+## for Az:
+variable "availability-zone" {
+  type = list
+}
+
+## root modules tags:
+variable "tags" {
+  type        = map
+  default     = {}
 }
